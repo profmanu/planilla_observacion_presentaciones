@@ -160,6 +160,7 @@ details.legend summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:1
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
+<div class="wrap" id="globalView"></div>
 <header class="top" id="top" data-zone="idle">
   <div class="wrap">
     <div class="r1">
@@ -365,21 +366,6 @@ function buildDraft(t){
   return o.map(function(x){return '- '+x}).join('\n');
 }
 function teamTitle(t){return 'Equipo '+t.num+' — '+(t.app||'sin nombre')}
-function allDrafts(){
-  var out='# Devolución de las presentaciones intermedias\n\n';
-  sorted().filter(function(t){return !t.ejemplo}).forEach(function(t){out+='## '+teamTitle(t)+'\n\n'+(t.draft||buildDraft(t)||'- (sin observaciones)')+'\n\n'});
-  return out.trim()+'\n';
-}
-async function copyText(text,fromEl){
-  try{await navigator.clipboard.writeText(text);toast('Copiado');return}catch(e){}
-  try{
-    var ta=fromEl||document.createElement('textarea');
-    if(!fromEl){ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta)}
-    ta.select();document.execCommand('copy');
-    if(!fromEl)ta.remove();
-    toast('Copiado');
-  }catch(e){toast('No se pudo copiar: seleccioná el texto y copialo a mano')}
-}
 /* ================= PDF ================= */
 var LV_RGB={1:{f:[194,55,47],t:[255,255,255]},2:{f:[232,178,58],t:[42,29,0]},3:{f:[35,121,76],t:[255,255,255]},4:{f:[14,110,120],t:[255,255,255]}};
 var INK=[19,28,51],INK2=[75,86,117],TINT=[228,232,252],LINEC=[213,219,232];
@@ -663,6 +649,14 @@ function itemHTML(i){
    +'<textarea class="cmt" id="c-'+i.k+'" rows="2" placeholder="Comentario sobre '+esc(i.n)+'…" hidden></textarea>'
    +'</div>';
 }
+function renderGlobal(){
+  var g=$('#globalView');
+  g.innerHTML='<section class="sec global"><h2>Todos los equipos</h2><p class="note">Cada evaluador trabaja en su propia copia: los datos quedan en este navegador. Los archivos juntan todos los equipos (sin el de ejemplo): un resumen y, por equipo, la planilla completa con el punteo de feedback debajo.</p>'
+    +'<div class="foots"><div class="hf"><label for="fEv">Evaluador/a (figura en los archivos)</label><input id="fEv" type="text" placeholder="Tu nombre"></div>'
+    +'<div class="hf"><label for="fBatch">Crear equipos del 1 al…</label><div class="row"><input id="fBatch" type="number" min="1" max="60" value="12" style="width:84px"><button class="btn" data-act="batch">Crear equipos</button></div></div></div>'
+    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn primary" data-act="xlsx">Descargar Excel</button></div></section>';
+  $('#fEv').value=ev;
+}
 function renderView(){
   var t=cur(),v=$('#view');
   if(!t){
@@ -677,10 +671,6 @@ function renderView(){
     +'<div class="hact">'+(t.ejemplo?'<span class="badge">Ejemplo</span><button class="btn sm" data-act="real">Es un equipo real</button>':'')
     +'<span id="delBox"><button class="btn sm" data-act="del">Eliminar equipo</button></span></div>'
     +'</section>';
-  h+='<section class="sec global"><h2>Todos los equipos</h2><p class="note">Cada evaluador trabaja en su propia copia: los datos quedan en este navegador. Los archivos juntan todos los equipos (sin el de ejemplo): un resumen y, por equipo, la planilla completa con el punteo de feedback debajo.</p>'
-    +'<div class="foots"><div class="hf"><label for="fEv">Evaluador/a (figura en los archivos)</label><input id="fEv" type="text" placeholder="Tu nombre"></div>'
-    +'<div class="hf"><label for="fBatch">Crear equipos del 1 al…</label><div class="row"><input id="fBatch" type="number" min="1" max="60" value="12" style="width:84px"><button class="btn" data-act="batch">Crear equipos</button></div></div></div>'
-    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn primary" data-act="xlsx">Descargar Excel</button><button class="btn" data-act="copyAll">Copiar todas las devoluciones</button></div></section>';
   h+='<nav class="jump" aria-label="Ir a un bloque">'+BLOCKS.map(function(b){return '<button data-act="jump" data-b="'+b.k+'">'+esc(b.s)+'</button>'}).join('')+'</nav>';
   h+='<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
     +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
@@ -693,7 +683,6 @@ function renderView(){
   h+='<section class="sec"><h2>Observaciones generales</h2><p class="note">Una observación por línea: cada línea se vuelve un bullet en la devolución.</p>'
     +'<textarea id="notes" rows="3" placeholder="Ej.: Buen arranque contando el contexto de la app."></textarea></section>';
   v.innerHTML=h;
-  $('#fEv').value=ev;
   // valores de textareas (sin interpolar HTML)
   BLOCKS.forEach(function(b){$('#bc-'+b.k).value=t.bc[b.k]||''});
   $('#notes').value=t.notes||'';
@@ -718,7 +707,7 @@ function paintBlock(b){
   var desc=c.map(function(n,i){return n?LEVELS[i].n+' '+n:''}).filter(Boolean).join(', ')||'Sin niveles asignados';
   if(m)m.innerHTML=r?('<span class="dist" role="img" aria-label="'+desc+'">'+c.map(function(n,i){return n?'<i style="flex:'+n+';background:var(--l'+(i+1)+')"></i>':''}).join('')+'</span>'):'';
 }
-function renderAll(){renderSelect();renderView();paintTimer()}
+function renderAll(){renderGlobal();renderSelect();renderView();paintTimer()}
 function switchTeam(id){
   pause();closeTimeEdit(false);delArmed=false;activeId=id;
   try{localStorage.setItem(LS+':a',id||'')}catch(e){}
@@ -738,7 +727,6 @@ document.addEventListener('click',function(e){
   else if(act==='del'&&t){$('#delBox').innerHTML='<span class="row" style="gap:6px"><button class="btn sm warn" data-act="delYes">Sí, eliminar</button><button class="btn sm" data-act="delNo">Cancelar</button></span>'}
   else if(act==='delNo'){$('#delBox').innerHTML='<button class="btn sm" data-act="del">Eliminar equipo</button>'}
   else if(act==='delYes'&&t){deleteTeam(t)}
-  else if(act==='copyAll'){copyText(allDrafts())}
   else if(act==='pdf'){exportPdf()}
   else if(act==='xlsx'){exportXlsx()}
   else if(act==='batch'){batchTeams()}
