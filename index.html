@@ -87,7 +87,6 @@ main{padding-block:18px 56px;display:flex;flex-direction:column;gap:22px}
 .badge{font:700 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--accents);color:var(--accent)}
 .jump{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .jump button{flex:none;display:flex;gap:8px;align-items:center;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600}
-.jump .jc{font:500 11px/1 var(--fontm);color:var(--ink2)}
 details.legend{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 14px}
 details.legend summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:13px;list-style-position:inside}
 .lg{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;padding-bottom:12px;font-size:13px;color:var(--ink2)}
@@ -99,7 +98,6 @@ details.legend summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:1
 .bmeta{margin-left:auto;display:flex;align-items:center;gap:8px}
 .dist{display:flex;width:64px;height:8px;border-radius:4px;overflow:hidden;background:var(--line2)}
 .dist i{display:block;height:100%}
-.cnt{font:500 12px/1 var(--fontm);color:var(--ink2)}
 .items{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:10px 14px;border-top:1px solid var(--line2)}
 .item:first-child{border-top:0}
@@ -134,7 +132,7 @@ details.legend summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:1
 .foots .hf{min-width:0}
 .empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:32px 20px;text-align:center;color:var(--ink2)}
 .empty h2{font:700 20px/1.2 var(--fontd);color:var(--ink);margin:0 0 6px}
-.foot{border-top:1px solid var(--line);padding-top:18px}
+.global{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding-block:18px;margin-bottom:2px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .15s;z-index:40;max-width:calc(100vw - 32px)}
 .toast.show{opacity:1}
 
@@ -195,6 +193,7 @@ details.legend summary{cursor:pointer;padding:11px 0;font-weight:600;font-size:1
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="vendor/xlsx.mini.min.js"></script>
 
 <script>
 (function(){
@@ -250,7 +249,6 @@ var BLOCKS=[
     {k:'con',n:'Cumplimiento de consignas',h:'Tiempo y pedidos de la actividad'}
   ]}
 ];
-var TOTAL=BLOCKS.reduce(function(a,b){return a+b.items.length},0);
 var MIN=8*60000,OBJ=10*60000,MAX=12*60000,SCALE=14*60000;
 var LS='planilla-exposiciones-v1';
 var EMPTY={p:false,l:0,x:false,c:''};
@@ -270,7 +268,6 @@ function sorted(){return teams.slice().sort(function(a,b){return (a.num-b.num)||
 function normalize(r){return Object.assign({id:uid(),num:1,app:'',n:3,t:0,items:{},bc:{},notes:'',draft:'',ts:0},r)}
 function newTeam(num){return normalize({num:num,ts:Date.now()})}
 function st(t,k){return t.items[k]||(t.items[k]={p:false,l:0,x:false,c:''})}
-function rated(t){var n=0;BLOCKS.forEach(function(b){b.items.forEach(function(i){var s=t.items[i.k];if(s&&s.l>0)n++})});return n}
 function elapsed(t){return (run&&t&&t.id===activeId)?run.base+(performance.now()-run.start):(t?t.t:0)}
 
 /* ================= Persistencia: base de datos con copia local ================= */
@@ -408,17 +405,17 @@ function summaryPage(doc,list,evName){
   doc.text('Evaluador/a: '+evName+'   ·   Fecha: '+new Date().toLocaleDateString('es-AR')+'   ·   '+list.length+' equipo'+(list.length===1?'':'s'),M,32);
   var rows=list.map(function(t){
     var e=elapsed(t),c=levelCounts(t);
-    return [String(t.num),pdfSafe(t.app)||'Sin nombre',String(t.n),e>0?fmt(e):'—',timeState(e,true),rated(t)+'/'+TOTAL,String(c[0]),String(c[1]),String(c[2]),String(c[3])];
+    return [String(t.num),pdfSafe(t.app)||'Sin nombre',String(t.n),e>0?fmt(e):'—',timeState(e,true),String(c[0]),String(c[1]),String(c[2]),String(c[3])];
   });
   doc.autoTable({
     startY:38,margin:{left:M,right:M,top:16,bottom:16},
-    head:[['Equipo','App o marca','Integr.','Duración','Tiempo','Evaluadas','Insuf.','En des.','Logr.','Dest.']],
+    head:[['Equipo','App o marca','Integr.','Duración','Tiempo','Insuf.','En des.','Logr.','Dest.']],
     body:rows,theme:'grid',
     styles:{font:'helvetica',fontSize:8.5,cellPadding:2,lineColor:LINEC,lineWidth:.2,textColor:INK,valign:'middle'},
     headStyles:{fillColor:INK,textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:8,cellPadding:1.6},
-    columnStyles:{0:{cellWidth:14,halign:'center'},1:{cellWidth:36,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:18,halign:'center'},4:{cellWidth:27,halign:'left'},5:{cellWidth:19,halign:'center'},6:{cellWidth:13.5,halign:'center'},7:{cellWidth:13.5,halign:'center'},8:{cellWidth:13.5,halign:'center'},9:{cellWidth:13.5,halign:'center'}},
+    columnStyles:{0:{cellWidth:14,halign:'center'},1:{cellWidth:40,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:20,halign:'center'},4:{cellWidth:34,halign:'left'},5:{cellWidth:15,halign:'center'},6:{cellWidth:15,halign:'center'},7:{cellWidth:15,halign:'center'},8:{cellWidth:15,halign:'center'}},
     didParseCell:function(d){
-      if(d.section==='head'&&d.column.index>=6){var lv=LV_RGB[d.column.index-5];d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
+      if(d.section==='head'&&d.column.index>=5){var lv=LV_RGB[d.column.index-4];d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
       if(d.section==='head'&&d.column.index===1)d.cell.styles.halign='left';
       if(d.section==='head'&&d.column.index===4)d.cell.styles.halign='left';
     }
@@ -500,11 +497,16 @@ async function savePdf(doc,name){
   }
   try{doc.save(name);toast('PDF generado')}catch(e){toast('No se pudo generar el PDF')}
 }
-function exportPdf(){
+function requireEvaluator(){
   var list=sorted().filter(function(t){return !t.ejemplo});
-  if(!list.length){toast('Todavía no hay equipos para exportar');return}
+  if(!list.length){toast('Todavía no hay equipos para exportar');return null}
   var evName=pdfSafe(ev);
-  if(!evName){toast('Escribí tu nombre de evaluador/a para que figure en el PDF');var f=$('#fEv');if(f){f.scrollIntoView({block:'center'});f.focus()}return}
+  if(!evName){toast('Escribí tu nombre de evaluador/a para que figure en el archivo');var f=$('#fEv');if(f){f.scrollIntoView({block:'center'});f.focus()}return null}
+  return {list:list,evName:evName};
+}
+function exportPdf(){
+  var ctx=requireEvaluator();if(!ctx)return;
+  var list=ctx.list,evName=ctx.evName;
   if(!(window.jspdf&&window.jspdf.jsPDF)){toast('No se pudo cargar el generador de PDF. Revisá la conexión y recargá la página.');return}
   var doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});
   if(typeof doc.autoTable!=='function'){toast('No se pudo cargar el generador de tablas. Recargá la página.');return}
@@ -518,6 +520,70 @@ function exportPdf(){
     doc.text('Página '+p+' de '+n,196,290,{align:'right'});
   }
   savePdf(doc,'planilla-exposiciones-'+(slug(evName)||'evaluador')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+}
+async function saveXlsx(wb,name){
+  if(dl){
+    try{var buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});await dl.save({filename:name,data:buf});toast('Excel guardado')}
+    catch(e){if(!e||e.code!=='declined')toast('No se pudo guardar el Excel')}
+    return;
+  }
+  try{XLSX.writeFile(wb,name);toast('Excel generado')}catch(e){toast('No se pudo generar el Excel')}
+}
+function sheetName(t){
+  var base=('E'+t.num+(t.app?' '+pdfSafe(t.app):'')).replace(/[:\\\/\?\*\[\]]/g,' ').replace(/\s+/g,' ').trim();
+  return base.slice(0,31)||('Equipo '+t.num);
+}
+function teamSheet(t,evName){
+  var e=elapsed(t);
+  var rows=[
+    ['Equipo '+t.num,pdfSafe(t.app)||'Sin nombre'],
+    ['Integrantes',t.n],
+    ['Duración',e>0?fmt(e):'Sin registrar'],
+    ['Estado del tiempo',timeState(e,false)],
+    ['Evaluador/a',evName],
+    [],
+    ['Bloque','Actividad','Presentó','Nivel','Notas']
+  ];
+  BLOCKS.forEach(function(b){
+    b.items.forEach(function(i){
+      var s=t.items[i.k]||EMPTY,lv=s.l>0?LEVELS[s.l-1].n:(s.p?'Sin nivel':'—');
+      var note=((s.x?'[Sin explicar] ':'')+pdfSafe(s.c)).trim();
+      rows.push([b.n,i.n,s.p?'Sí':'No',lv,note]);
+    });
+    var bc=pdfSafe(t.bc[b.k]);
+    if(bc)rows.push([b.n,'Comentario del bloque','','',bc]);
+  });
+  rows.push([],['Observaciones generales']);
+  rows.push(['',pdfSafe(t.notes)||'—']);
+  rows.push([],['Punteo de feedback para el equipo']);
+  var bl=draftLines(t);
+  (bl.length?bl:['Sin observaciones cargadas.']).forEach(function(l){rows.push(['',l])});
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:20},{wch:32},{wch:10},{wch:14},{wch:72}];
+  return ws;
+}
+function exportXlsx(){
+  var ctx=requireEvaluator();if(!ctx)return;
+  var list=ctx.list,evName=ctx.evName;
+  if(!(window.XLSX&&window.XLSX.utils)){toast('No se pudo cargar el generador de Excel. Revisá la conexión y recargá la página.');return}
+  var head=['Equipo','App o marca','Integrantes','Duración','Tiempo','Insuficiente','En desarrollo','Logrado','Destacado'];
+  var rows=[head];
+  list.forEach(function(t){
+    var e=elapsed(t),c=levelCounts(t);
+    rows.push([t.num,pdfSafe(t.app)||'Sin nombre',t.n,e>0?fmt(e):'—',timeState(e,true),c[0],c[1],c[2],c[3]]);
+  });
+  var wb=XLSX.utils.book_new();
+  var wsSum=XLSX.utils.aoa_to_sheet(rows);
+  wsSum['!cols']=[{wch:8},{wch:28},{wch:10},{wch:10},{wch:16},{wch:11},{wch:12},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,wsSum,'Resumen');
+  var used={};
+  list.forEach(function(t){
+    var n=sheetName(t),base=n,i=2;
+    while(used[n]){n=(base.slice(0,28)+' '+i).slice(0,31);i++}
+    used[n]=true;
+    XLSX.utils.book_append_sheet(wb,teamSheet(t,evName),n);
+  });
+  saveXlsx(wb,'planilla-exposiciones-'+(slug(evName)||'evaluador')+'-'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function batchTeams(){
   var N=Math.max(1,Math.min(60,parseInt($('#fBatch').value,10)||0)),made=0,first=null,hadEx=teams.some(function(t){return t.ejemplo});
@@ -578,7 +644,7 @@ function closeTimeEdit(save){
 }
 
 /* ================= Vistas ================= */
-function label(t){return (t.ejemplo?'Ejemplo · ':'')+'Equipo '+t.num+(t.app?' · '+t.app:'')+' · '+rated(t)+'/'+TOTAL}
+function label(t){return (t.ejemplo?'Ejemplo · ':'')+'Equipo '+t.num+(t.app?' · '+t.app:'')}
 function renderSelect(){
   var sel=$('#teamSel'),list=sorted();
   sel.innerHTML=list.length?list.map(function(t){return '<option value="'+t.id+'">'+esc(label(t))+'</option>'}).join(''):'<option value="">Sin equipos</option>';
@@ -607,11 +673,15 @@ function renderView(){
   h+='<section class="head">'
     +'<div class="hf"><label for="fNum">N.º</label><input id="fNum" type="number" min="1" value="'+t.num+'"></div>'
     +'<div class="hf"><label for="fApp">App o marca</label><input id="fApp" type="text" value="'+esc(t.app)+'" placeholder="Nombre de la app o marca"></div>'
-    +'<div class="hf hn"><label for="fN">Integrantes</label><select id="fN">'+[2,3,4].map(function(n){return '<option value="'+n+'"'+(t.n===n?' selected':'')+'>'+n+' personas</option>'}).join('')+'</select></div>'
+    +'<div class="hf hn"><label for="fN">Integrantes</label><select id="fN">'+[2,3,4,5,6].map(function(n){return '<option value="'+n+'"'+(t.n===n?' selected':'')+'>'+n+' personas</option>'}).join('')+'</select></div>'
     +'<div class="hact">'+(t.ejemplo?'<span class="badge">Ejemplo</span><button class="btn sm" data-act="real">Es un equipo real</button>':'')
     +'<span id="delBox"><button class="btn sm" data-act="del">Eliminar equipo</button></span></div>'
     +'</section>';
-  h+='<nav class="jump" aria-label="Ir a un bloque">'+BLOCKS.map(function(b){return '<button data-act="jump" data-b="'+b.k+'" data-jump="'+b.k+'">'+esc(b.s)+' <span class="jc"></span></button>'}).join('')+'</nav>';
+  h+='<section class="sec global"><h2>Todos los equipos</h2><p class="note">Cada evaluador trabaja en su propia copia: los datos quedan en este navegador. Los archivos juntan todos los equipos (sin el de ejemplo): un resumen y, por equipo, la planilla completa con el punteo de feedback debajo.</p>'
+    +'<div class="foots"><div class="hf"><label for="fEv">Evaluador/a (figura en los archivos)</label><input id="fEv" type="text" placeholder="Tu nombre"></div>'
+    +'<div class="hf"><label for="fBatch">Crear equipos del 1 al…</label><div class="row"><input id="fBatch" type="number" min="1" max="60" value="12" style="width:84px"><button class="btn" data-act="batch">Crear equipos</button></div></div></div>'
+    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn primary" data-act="xlsx">Descargar Excel</button><button class="btn" data-act="copyAll">Copiar todas las devoluciones</button></div></section>';
+  h+='<nav class="jump" aria-label="Ir a un bloque">'+BLOCKS.map(function(b){return '<button data-act="jump" data-b="'+b.k+'">'+esc(b.s)+'</button>'}).join('')+'</nav>';
   h+='<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
     +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
     +'<b style="background:var(--line2);color:var(--ink2)">Sin explicar</b><span>Se mostró un artefacto o resultado sin contarlo: cuenta para el borrador de devolución.</span></div></details>';
@@ -622,24 +692,16 @@ function renderView(){
   });
   h+='<section class="sec"><h2>Observaciones generales</h2><p class="note">Una observación por línea: cada línea se vuelve un bullet en la devolución.</p>'
     +'<textarea id="notes" rows="3" placeholder="Ej.: Buen arranque contando el contexto de la app."></textarea></section>';
-  h+='<section class="sec"><h2>Devolución</h2><p class="note">Se arma con tus checks, niveles y comentarios, más la duración. Editala antes de copiarla.</p>'
-    +'<div class="row"><button class="btn primary" data-act="gen" id="genBtn">Generar borrador</button><button class="btn" data-act="copy">Copiar</button></div>'
-    +'<textarea class="draft" id="draft" rows="10" placeholder="Tocá «Generar borrador» cuando termines de corregir."></textarea></section>';
-  h+='<section class="sec foot"><h2>Todos los equipos</h2><p class="note">Cada evaluador trabaja en su propia copia: los datos quedan en este navegador. El PDF junta todos los equipos (sin el de ejemplo): un resumen y, por equipo, la planilla completa con el punteo de feedback debajo.</p>'
-    +'<div class="foots"><div class="hf"><label for="fEv">Evaluador/a (figura en el PDF)</label><input id="fEv" type="text" placeholder="Tu nombre"></div>'
-    +'<div class="hf"><label for="fBatch">Crear equipos del 1 al…</label><div class="row"><input id="fBatch" type="number" min="1" max="60" value="12" style="width:84px"><button class="btn" data-act="batch">Crear equipos</button></div></div></div>'
-    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF de todos los equipos</button><button class="btn" data-act="copyAll">Copiar todas las devoluciones</button></div></section>';
   v.innerHTML=h;
   $('#fEv').value=ev;
   // valores de textareas (sin interpolar HTML)
   BLOCKS.forEach(function(b){$('#bc-'+b.k).value=t.bc[b.k]||''});
-  $('#notes').value=t.notes||'';$('#draft').value=t.draft||'';
+  $('#notes').value=t.notes||'';
   BLOCKS.forEach(function(b){b.items.forEach(function(i){
     var el=$('.item[data-k="'+i.k+'"]'),s=t.items[i.k],c=$('.cmt',el);
     c.value=(s&&s.c)||'';if(c.value)c.hidden=false;
     paintItem(el);
   });paintBlock(b)});
-  $('#genBtn').textContent=t.draft?'Regenerar borrador':'Generar borrador';
 }
 function paintItem(el){
   var t=cur(),k=el.dataset.k,s=t.items[k]||EMPTY;
@@ -654,8 +716,7 @@ function paintBlock(b){
   b.items.forEach(function(i){var s=t.items[i.k];if(s&&s.l>0){c[s.l-1]++;r++}});
   var m=$('[data-meta="'+b.k+'"]');
   var desc=c.map(function(n,i){return n?LEVELS[i].n+' '+n:''}).filter(Boolean).join(', ')||'Sin niveles asignados';
-  if(m)m.innerHTML='<span class="dist" role="img" aria-label="'+desc+'">'+c.map(function(n,i){return n?'<i style="flex:'+n+';background:var(--l'+(i+1)+')"></i>':''}).join('')+'</span><span class="cnt">'+r+'/'+b.items.length+'</span>';
-  var j=$('[data-jump="'+b.k+'"] .jc');if(j)j.textContent=r+'/'+b.items.length;
+  if(m)m.innerHTML=r?('<span class="dist" role="img" aria-label="'+desc+'">'+c.map(function(n,i){return n?'<i style="flex:'+n+';background:var(--l'+(i+1)+')"></i>':''}).join('')+'</span>'):'';
 }
 function renderAll(){renderSelect();renderView();paintTimer()}
 function switchTeam(id){
@@ -677,14 +738,9 @@ document.addEventListener('click',function(e){
   else if(act==='del'&&t){$('#delBox').innerHTML='<span class="row" style="gap:6px"><button class="btn sm warn" data-act="delYes">Sí, eliminar</button><button class="btn sm" data-act="delNo">Cancelar</button></span>'}
   else if(act==='delNo'){$('#delBox').innerHTML='<button class="btn sm" data-act="del">Eliminar equipo</button>'}
   else if(act==='delYes'&&t){deleteTeam(t)}
-  else if(act==='gen'&&t){
-    if(t.draft&&t.draft.trim()&&$('#draft').value!==buildDraft(t)&&!b.dataset.sure){b.dataset.sure='1';b.textContent='Reemplazar el texto actual';setTimeout(function(){delete b.dataset.sure;b.textContent='Regenerar borrador'},3000);return}
-    delete b.dataset.sure;t.draft=buildDraft(t);$('#draft').value=t.draft;b.textContent='Regenerar borrador';touch(t);
-    if(!t.draft)toast('Todavía no hay checks ni comentarios para armar el borrador');
-  }
-  else if(act==='copy'&&t){var d=$('#draft');if(!d.value.trim()){d.value=buildDraft(t);t.draft=d.value;touch(t)}copyText(d.value,d)}
   else if(act==='copyAll'){copyText(allDrafts())}
   else if(act==='pdf'){exportPdf()}
+  else if(act==='xlsx'){exportXlsx()}
   else if(act==='batch'){batchTeams()}
 });
 document.addEventListener('change',function(e){
@@ -702,7 +758,6 @@ document.addEventListener('input',function(e){
   else if(el.dataset&&el.dataset.bc){t.bc[el.dataset.bc]=el.value;touchSoon(t)}
   else if(el.id==='fApp'){t.app=el.value;touchSoon(t);renderSelect()}
   else if(el.id==='notes'){t.notes=el.value;touchSoon(t)}
-  else if(el.id==='draft'){t.draft=el.value;touchSoon(t)}
 });
 $('#add').addEventListener('click',addTeam);
 $('#prev').addEventListener('click',function(){step(-1)});
