@@ -70,6 +70,7 @@ button{cursor:pointer}
 .btn:hover{background:var(--surface2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accentf)}
 .btn.primary:hover{filter:brightness(1.08)}
+.btn.primary.go{background:var(--ok);border-color:var(--ok)}
 .btn.warn{color:var(--warn);border-color:var(--warn)}
 .btn.sm{height:30px;padding:0 10px;font-size:12px}
 .ib{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:18px;line-height:1;padding:0}
@@ -596,6 +597,7 @@ function paintTimer(){
   $('#zoneLbl').textContent=ZL[z];
   $('#fill').style.width=Math.min(e/SCALE,1)*100+'%';
   $('#go').textContent=run?'Pausar':(t&&t.t>0?'Reanudar':'Iniciar');
+  $('#go').classList.toggle('go',!run);
   $('#go').disabled=!t;$('#reset').disabled=!t;
 }
 function startPause(){
