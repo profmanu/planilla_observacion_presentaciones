@@ -86,8 +86,22 @@ main{padding-block:28px 64px;display:flex;flex-direction:column;gap:34px}
 .hf label{display:block;font:600 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
 .hact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .badge{font:700 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--accents);color:var(--accent)}
-.jump{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
-.jump button{flex:none;display:flex;gap:8px;align-items:center;height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600}
+/* ---------- Sidebar de navegación ---------- */
+.sidenav{position:fixed;top:0;left:0;bottom:0;width:236px;background:var(--surface);border-right:1px solid var(--line);overflow-y:auto;z-index:20;display:none}
+body.has-sidebar .sidenav{display:block}
+body.has-sidebar{padding-left:236px}
+.sidenav-scroll{padding:22px 14px 28px}
+.scat{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 8px 6px;margin-top:16px;font:700 11px/1.3 var(--fontb);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);border-radius:6px;cursor:pointer}
+.scat:first-child{margin-top:0}
+.scat:hover{background:var(--surface2);color:var(--ink)}
+.scat.active{color:var(--accent)}
+.sitems{display:flex;flex-direction:column;gap:1px;margin-bottom:2px}
+.sitem{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:8px 10px 8px 16px;font-size:13px;line-height:1.35;color:var(--ink2);cursor:pointer}
+.sitem:hover{background:var(--surface2);color:var(--ink)}
+.sitem.active{background:var(--accents);color:var(--accent);font-weight:600}
+.navtoggle{display:none}
+.navback{position:fixed;inset:0;background:rgba(19,28,51,.4);z-index:45;opacity:0;pointer-events:none;transition:opacity .2s;display:none}
+@media (min-width:761px){body.has-sidebar .toast{left:calc(50% + 118px)}}
 details.legend{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 16px}
 details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:13px;list-style-position:inside}
 .lg{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;padding-bottom:16px;font-size:13px;color:var(--ink2)}
@@ -100,7 +114,7 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
 .dist{display:flex;width:64px;height:8px;border-radius:4px;overflow:hidden;background:var(--line2)}
 .dist i{display:block;height:100%}
 .items{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;align-items:center;padding:15px 16px;border-top:1px solid var(--line2)}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;align-items:center;padding:15px 16px;border-top:1px solid var(--line2);scroll-margin-top:170px}
 .item:first-child{border-top:0}
 .chk{display:flex;gap:10px;align-items:flex-start;cursor:pointer;min-width:0}
 .chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--accent)}
@@ -154,6 +168,14 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
   .digits{font-size:26px}
   .sync{font-size:0;gap:0}
   .blk{scroll-margin-top:150px}
+  .item{scroll-margin-top:150px}
+  body.has-sidebar{padding-left:0}
+  .sidenav{width:min(84vw,300px);transform:translateX(-100%);transition:transform .25s ease;z-index:50;box-shadow:2px 0 20px rgba(19,28,51,.2)}
+  body.nav-open .sidenav{transform:translateX(0)}
+  .navtoggle{display:inline-flex}
+  body:not(.has-sidebar) .navtoggle{display:none}
+  .navback{display:block}
+  body.nav-open .navback{opacity:1;pointer-events:auto}
 }
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 </style>
@@ -161,10 +183,13 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
+<nav class="sidenav" id="sidenav" aria-label="Categorías de la planilla"></nav>
+<div class="navback" id="navBack" data-act="navclose"></div>
 <div class="wrap" id="globalView"></div>
 <header class="top" id="top" data-zone="idle">
   <div class="wrap">
     <div class="r1">
+      <button type="button" class="ib navtoggle" id="navToggle" data-act="navtoggle" aria-label="Ver categorías" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       <span class="brand">Planilla de exposiciones</span>
       <div class="nav">
         <button class="ib" id="prev" aria-label="Equipo anterior">‹</button>
@@ -659,9 +684,47 @@ function renderGlobal(){
     +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn primary" data-act="xlsx">Descargar Excel</button></div></section>';
   $('#fEv').value=ev;
 }
+function renderSidenav(){
+  var n=$('#sidenav');
+  n.innerHTML='<div class="sidenav-scroll">'+BLOCKS.map(function(b){
+    return '<button type="button" class="scat" data-act="navcat" data-b="'+b.k+'">'+esc(b.s)+'</button>'
+     +'<div class="sitems">'+b.items.map(function(i){return '<button type="button" class="sitem" data-act="navitem" data-k="'+i.k+'">'+esc(i.n)+'</button>'}).join('')+'</div>';
+  }).join('')+'</div>';
+}
+function closeNav(){
+  document.body.classList.remove('nav-open');
+  var tb=$('#navToggle');if(tb)tb.setAttribute('aria-expanded','false');
+}
+function scrollToEl(el){
+  if(!el)return;
+  var offset=$('#top').getBoundingClientRect().height+20;
+  var top=el.getBoundingClientRect().top+window.scrollY-offset+2;
+  window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+}
+var navRAF=null,lastActiveK=null;
+function updateActiveNav(){
+  navRAF=null;
+  var items=$$('.item[data-k]',$('#view'));
+  if(!items.length)return;
+  var offset=$('#top').getBoundingClientRect().height+20,activeEl=items[0];
+  for(var i=0;i<items.length;i++){
+    if(items[i].getBoundingClientRect().top-offset<=2)activeEl=items[i];else break;
+  }
+  var k=activeEl.dataset.k;
+  if(k===lastActiveK)return;
+  lastActiveK=k;
+  var blk=BLOCKS.find(function(x){return x.items.some(function(it){return it.k===k})});
+  $$('.sitem',$('#sidenav')).forEach(function(el){el.classList.toggle('active',el.dataset.k===k)});
+  $$('.scat',$('#sidenav')).forEach(function(el){el.classList.toggle('active',!!blk&&el.dataset.b===blk.k)});
+  var ab=$('.sitem[data-k="'+k+'"]',$('#sidenav'));if(ab)ab.scrollIntoView({block:'nearest'});
+}
+window.addEventListener('scroll',function(){if(!navRAF)navRAF=requestAnimationFrame(updateActiveNav)},{passive:true});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('nav-open'))closeNav()});
 function renderView(){
   var t=cur(),v=$('#view');
+  document.body.classList.toggle('has-sidebar',!!t);
   if(!t){
+    closeNav();lastActiveK=null;
     v.innerHTML='<div class="empty"><h2>Todavía no hay equipos</h2><p>Agregá el primero para empezar a corregir.</p><button class="btn primary" data-act="add">+ Equipo</button></div>';
     return;
   }
@@ -673,7 +736,6 @@ function renderView(){
     +'<div class="hact">'+(t.ejemplo?'<span class="badge">Ejemplo</span><button class="btn sm" data-act="real">Es un equipo real</button>':'')
     +'<span id="delBox"><button class="btn sm" data-act="del">Eliminar equipo</button></span></div>'
     +'</section>';
-  h+='<nav class="jump" aria-label="Ir a un bloque">'+BLOCKS.map(function(b){return '<button data-act="jump" data-b="'+b.k+'">'+esc(b.s)+'</button>'}).join('')+'</nav>';
   h+='<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
     +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
     +'<b style="background:var(--line2);color:var(--ink2)">Sin explicar</b><span>Se mostró un artefacto o resultado sin contarlo: cuenta para el borrador de devolución.</span></div></details>';
@@ -693,6 +755,7 @@ function renderView(){
     c.value=(s&&s.c)||'';if(c.value)c.hidden=false;
     paintItem(el);
   });paintBlock(b)});
+  lastActiveK=null;updateActiveNav();
 }
 function paintItem(el){
   var t=cur(),k=el.dataset.k,s=t.items[k]||EMPTY;
@@ -723,7 +786,10 @@ document.addEventListener('click',function(e){
   if(act==='lvl'&&t){var s=st(t,it.dataset.k),v=+b.dataset.v;s.l=s.l===v?0:v;if(s.l>0)s.p=true;paintItem(it);paintBlock(BLOCKS.find(function(x){return x.items.some(function(i){return i.k===it.dataset.k})}));renderSelect();touch(t)}
   else if(act==='x'&&t){var s2=st(t,it.dataset.k);s2.x=!s2.x;if(s2.x)s2.p=true;paintItem(it);touch(t)}
   else if(act==='c'){var c=$('.cmt',it);c.hidden=!c.hidden;if(!c.hidden)c.focus()}
-  else if(act==='jump'){var sec=$('#b-'+b.dataset.b);if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(act==='navcat'){scrollToEl($('#b-'+b.dataset.b));closeNav()}
+  else if(act==='navitem'){scrollToEl($('.item[data-k="'+b.dataset.k+'"]'));closeNav()}
+  else if(act==='navtoggle'){var open=!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);b.setAttribute('aria-expanded',String(open))}
+  else if(act==='navclose'){closeNav()}
   else if(act==='add'){addTeam()}
   else if(act==='real'&&t){t.ejemplo=false;touch(t);renderAll()}
   else if(act==='del'&&t){$('#delBox').innerHTML='<span class="row" style="gap:6px"><button class="btn sm warn" data-act="delYes">Sí, eliminar</button><button class="btn sm" data-act="delNo">Cancelar</button></span>'}
@@ -781,6 +847,7 @@ if(!teams.length){
 try{activeId=localStorage.getItem(LS+':a')}catch(e){}
 try{ev=localStorage.getItem(LS+':ev')||''}catch(e){}
 if(!teams.some(function(t){return t.id===activeId}))activeId=sorted()[0]?sorted()[0].id:null;
+renderSidenav();
 renderAll();
 setInterval(function(){
   var t=cur();if(!t)return;
