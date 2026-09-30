@@ -82,7 +82,7 @@ select{padding-right:6px}
 
 /* ---------- Contenido ---------- */
 main{padding-block:28px 64px;display:flex;flex-direction:column;gap:34px}
-.head{display:grid;grid-template-columns:84px 1fr 130px auto;gap:16px;align-items:end}
+.head{display:grid;grid-template-columns:84px 1fr 130px 110px auto;gap:16px;align-items:end}
 .hf label{display:block;font:600 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:8px}
 .hact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .badge{font:700 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--accents);color:var(--accent)}
@@ -157,6 +157,8 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
   .head{grid-template-columns:72px 1fr}
   .head .hn{grid-column:1/-1}
   .head .hn select{max-width:200px}
+  .head .hg{grid-column:1/-1}
+  .head .hg input{max-width:140px}
   .hact{grid-column:1/-1;justify-content:flex-start}
   .mk u i{display:none}
   .item{grid-template-columns:1fr}
@@ -305,7 +307,7 @@ function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');
 var teams=[],activeId=null,db=null,dl=null,run=null,tick=0,delArmed=false,resetArmed=false,ev='';
 function cur(){return teams.find(function(t){return t.id===activeId})}
 function sorted(){return teams.slice().sort(function(a,b){return (a.num-b.num)||(a.ts-b.ts)})}
-function normalize(r){return Object.assign({id:uid(),num:1,app:'',n:3,t:0,items:{},bc:{},notes:'',draft:'',ts:0},r)}
+function normalize(r){return Object.assign({id:uid(),num:1,app:'',n:3,t:0,items:{},bc:{},notes:'',draft:'',ts:0,grade:null},r)}
 function newTeam(num){return normalize({num:num,ts:Date.now()})}
 function st(t,k){return t.items[k]||(t.items[k]={p:false,l:0,x:false,c:''})}
 function elapsed(t){return (run&&t&&t.id===activeId)?run.base+(performance.now()-run.start):(t?t.t:0)}
@@ -356,7 +358,7 @@ async function hydrate(){
 
 /* ================= Equipo de ejemplo ================= */
 function seedTeam(){
-  var t=newTeam(1);t.ejemplo=true;t.app='App de ejemplo';t.n=3;t.t=9*60000+12000;
+  var t=newTeam(1);t.ejemplo=true;t.app='App de ejemplo';t.n=3;t.t=9*60000+12000;t.grade=8.5;
   t.items={
     pu:{p:true,l:3,x:false,c:''},
     af:{p:true,l:4,x:false,c:'Agruparon con criterio y llegaron a insights claros.'},
@@ -430,19 +432,19 @@ function summaryPage(doc,list,evName){
   doc.text('Evaluador/a: '+evName+'   ·   Fecha: '+new Date().toLocaleDateString('es-AR')+'   ·   '+list.length+' equipo'+(list.length===1?'':'s'),M,32);
   var rows=list.map(function(t){
     var e=elapsed(t),c=levelCounts(t);
-    return [String(t.num),pdfSafe(t.app)||'Sin nombre',String(t.n),e>0?fmt(e):'—',timeState(e,true),String(c[0]),String(c[1]),String(c[2]),String(c[3])];
+    return [String(t.num),pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),String(t.n),e>0?fmt(e):'—',timeState(e,true),String(c[0]),String(c[1]),String(c[2]),String(c[3])];
   });
   doc.autoTable({
     startY:38,margin:{left:M,right:M,top:16,bottom:16},
-    head:[['Equipo','App o marca','Integr.','Duración','Tiempo','Insuf.','En des.','Logr.','Dest.']],
+    head:[['Equipo','App o marca','Nota','Integr.','Duración','Tiempo','Insuf.','En des.','Logr.','Dest.']],
     body:rows,theme:'grid',
     styles:{font:'helvetica',fontSize:8.5,cellPadding:2,lineColor:LINEC,lineWidth:.2,textColor:INK,valign:'middle'},
     headStyles:{fillColor:INK,textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:8,cellPadding:1.6},
-    columnStyles:{0:{cellWidth:14,halign:'center'},1:{cellWidth:40,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:20,halign:'center'},4:{cellWidth:34,halign:'left'},5:{cellWidth:15,halign:'center'},6:{cellWidth:15,halign:'center'},7:{cellWidth:15,halign:'center'},8:{cellWidth:15,halign:'center'}},
+    columnStyles:{0:{cellWidth:12,halign:'center'},1:{cellWidth:42,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:12,halign:'center'},4:{cellWidth:18,halign:'center'},5:{cellWidth:28,halign:'left'},6:{cellWidth:14,halign:'center'},7:{cellWidth:14,halign:'center'},8:{cellWidth:14,halign:'center'},9:{cellWidth:14,halign:'center'}},
     didParseCell:function(d){
-      if(d.section==='head'&&d.column.index>=5){var lv=LV_RGB[d.column.index-4];d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
+      if(d.section==='head'&&d.column.index>=6){var lv=LV_RGB[d.column.index-5];d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
       if(d.section==='head'&&d.column.index===1)d.cell.styles.halign='left';
-      if(d.section==='head'&&d.column.index===4)d.cell.styles.halign='left';
+      if(d.section==='head'&&d.column.index===5)d.cell.styles.halign='left';
     }
   });
   var y=doc.lastAutoTable.finalY+10;
@@ -466,7 +468,7 @@ function teamPage(doc,t,evName){
   doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text(pdfSafe(teamTitle(t)),M,18);
   var e=elapsed(t);
   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(INK2[0],INK2[1],INK2[2]);
-  doc.text('Integrantes: '+t.n+'   ·   Duración: '+(e>0?fmt(e)+' ('+timeState(e,false)+')':'sin registrar')+'   ·   Evaluador/a: '+evName,M,24);
+  doc.text('Integrantes: '+t.n+'   ·   Duración: '+(e>0?fmt(e)+' ('+timeState(e,false)+')':'sin registrar')+'   ·   Nota: '+(t.grade==null?'sin calificar':t.grade.toFixed(1))+'   ·   Evaluador/a: '+evName,M,24);
   var body=[];
   BLOCKS.forEach(function(b){
     body.push([{content:pdfSafe(b.n).toUpperCase()+(b.core?'   ·   NÚCLEO':''),colSpan:4,styles:{fillColor:TINT,textColor:INK,fontStyle:'bold',fontSize:8}}]);
@@ -565,6 +567,7 @@ function teamSheet(t,evName){
     ['Integrantes',t.n],
     ['Duración',e>0?fmt(e):'Sin registrar'],
     ['Estado del tiempo',timeState(e,false)],
+    ['Nota',t.grade==null?'Sin calificar':t.grade.toFixed(1)],
     ['Evaluador/a',evName],
     [],
     ['Bloque','Actividad','Presentó','Nivel','Notas']
@@ -591,15 +594,15 @@ function exportXlsx(){
   var ctx=requireEvaluator();if(!ctx)return;
   var list=ctx.list,evName=ctx.evName;
   if(!(window.XLSX&&window.XLSX.utils)){toast('No se pudo cargar el generador de Excel. Revisá la conexión y recargá la página.');return}
-  var head=['Equipo','App o marca','Integrantes','Duración','Tiempo','Insuficiente','En desarrollo','Logrado','Destacado'];
+  var head=['Equipo','App o marca','Nota','Integrantes','Duración','Tiempo','Insuficiente','En desarrollo','Logrado','Destacado'];
   var rows=[head];
   list.forEach(function(t){
     var e=elapsed(t),c=levelCounts(t);
-    rows.push([t.num,pdfSafe(t.app)||'Sin nombre',t.n,e>0?fmt(e):'—',timeState(e,true),c[0],c[1],c[2],c[3]]);
+    rows.push([t.num,pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),t.n,e>0?fmt(e):'—',timeState(e,true),c[0],c[1],c[2],c[3]]);
   });
   var wb=XLSX.utils.book_new();
   var wsSum=XLSX.utils.aoa_to_sheet(rows);
-  wsSum['!cols']=[{wch:8},{wch:28},{wch:10},{wch:10},{wch:16},{wch:11},{wch:12},{wch:10},{wch:10}];
+  wsSum['!cols']=[{wch:8},{wch:28},{wch:8},{wch:10},{wch:10},{wch:16},{wch:11},{wch:12},{wch:10},{wch:10}];
   XLSX.utils.book_append_sheet(wb,wsSum,'Resumen');
   var used={};
   list.forEach(function(t){
@@ -747,6 +750,7 @@ function renderView(){
     +'<div class="hf"><label for="fNum">N.º</label><input id="fNum" type="number" min="1" value="'+t.num+'"></div>'
     +'<div class="hf"><label for="fApp">App o marca</label><input id="fApp" type="text" value="'+esc(t.app)+'" placeholder="Nombre de la app o marca"></div>'
     +'<div class="hf hn"><label for="fN">Integrantes</label><select id="fN">'+[2,3,4,5,6].map(function(n){return '<option value="'+n+'"'+(t.n===n?' selected':'')+'>'+n+' personas</option>'}).join('')+'</select></div>'
+    +'<div class="hf hg"><label for="fGrade">Nota (0-10)</label><input id="fGrade" type="number" min="0" max="10" step="0.1" inputmode="decimal" placeholder="—" value="'+(t.grade==null?'':t.grade)+'"></div>'
     +'<div class="hact">'+(t.ejemplo?'<span class="badge">Ejemplo</span><button class="btn sm" data-act="real">Es un equipo real</button>':'')
     +'<span id="delBox"><button class="btn sm" data-act="del">Eliminar equipo</button></span></div>'
     +'</section>';
@@ -824,6 +828,11 @@ document.addEventListener('change',function(e){
   if(el.matches('input[data-act="p"]')){var it=el.closest('.item'),s=st(t,it.dataset.k);s.p=el.checked;paintItem(it);touch(t)}
   else if(el.id==='fNum'){t.num=Math.max(1,parseInt(el.value,10)||1);el.value=t.num;touch(t);renderSelect()}
   else if(el.id==='fN'){t.n=+el.value;touch(t)}
+  else if(el.id==='fGrade'){
+    var v=el.value.trim(),g=null;
+    if(v!==''){g=parseFloat(v.replace(',','.'));if(!isNaN(g)){g=Math.round(Math.max(0,Math.min(10,g))*10)/10}else{g=null}}
+    t.grade=g;el.value=(g==null?'':g);touch(t);
+  }
   else if(el.id==='teamSel'){if(el.value)switchTeam(el.value)}
 });
 document.addEventListener('input',function(e){
