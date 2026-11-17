@@ -86,12 +86,15 @@ main{padding-block:28px 64px;display:flex;flex-direction:column;gap:34px}
 .hact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .badge{font:700 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;background:var(--accents);color:var(--accent)}
 /* ---------- Integrantes ---------- */
-.people{display:flex;flex-direction:column;gap:10px}
-.ph{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.ph label{font:600 11px/1 var(--fontb);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
-.ph .note{font-size:12px;color:var(--ink2);flex:1;min-width:140px}
+.people{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:12px 16px;flex-wrap:wrap}
+.pt h2{font:700 19px/1.2 var(--fontd);margin:0}
+.pt .note{margin:4px 0 0;font-size:13px;line-height:1.5;color:var(--ink2)}
+.pc{display:flex;align-items:flex-end;gap:10px}
+.pc .hf label{margin-bottom:6px}
+.cc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--warn)}
 .plist{display:flex;flex-direction:column;gap:8px}
-.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .prow .pcm{grid-column:1/-1}
 .tg.warn{color:var(--warn);border-color:var(--warn)}
 /* ---------- Sidebar de navegación ---------- */
@@ -110,11 +113,11 @@ body.has-sidebar{padding-left:236px}
 .navtoggle{display:none}
 .navback{position:fixed;inset:0;background:rgba(19,28,51,.4);z-index:45;opacity:0;pointer-events:none;transition:opacity .2s;display:none}
 @media (min-width:761px){body.has-sidebar .toast{left:calc(50% + 118px)}}
-details.legend{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 16px}
+details.legend{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 16px;margin-block:20px}
 details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:13px;list-style-position:inside}
 .lg{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;padding-bottom:16px;font-size:13px;color:var(--ink2)}
 .lg b{display:inline-block;min-width:96px;text-align:center;padding:3px 8px;border-radius:6px;font-size:12px}
-.blk{scroll-margin-top:170px}
+.blk,.people{scroll-margin-top:170px}
 .bh{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .bh h2{font:700 19px/1.2 var(--fontd);margin:0;text-wrap:balance}
 .tag{font:700 10px/1 var(--fontb);letter-spacing:.08em;text-transform:uppercase;padding:5px 7px;border-radius:5px;background:var(--ink);color:var(--surface)}
@@ -176,7 +179,7 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
   .ctl .btn{padding:0 10px}
   .digits{font-size:26px}
   .sync{font-size:0;gap:0}
-  .blk{scroll-margin-top:150px}
+  .blk,.people{scroll-margin-top:150px}
   .item{scroll-margin-top:150px}
   body.has-sidebar{padding-left:0}
   .sidenav{width:min(84vw,300px);transform:translateX(-100%);transition:transform .25s ease;z-index:50;box-shadow:2px 0 20px rgba(19,28,51,.2)}
@@ -306,7 +309,9 @@ function normalize(r){
   return t;
 }
 function findPerson(t,id){return t.people.find(function(p){return p.id===id})}
-function peopleCount(t){return t.people.filter(function(p){return (p.n||'').trim()}).length}
+function peopleCount(t){return t.people.length}
+var MAXP=20,pendingCount=null;
+function personHasData(p){return !!((p.n||'').trim()||p.l>0||(p.c||'').trim())}
 function personRows(t){
   return t.people.filter(function(p){return (p.n||'').trim()||p.l>0||(p.c||'').trim()}).map(function(p){
     return {name:pdfSafe(p.n)||'Sin nombre',l:p.l||0,c:pdfSafe(p.c)};
@@ -682,18 +687,23 @@ function itemHTML(i){
    +'<textarea class="cmt" id="c-'+i.k+'" rows="2" placeholder="Comentario sobre '+esc(i.n)+'…" hidden></textarea>'
    +'</div>';
 }
+function legendHTML(){
+  return '<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
+    +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
+    +'<b style="background:var(--line2);color:var(--ink2)">Sin explicar</b><span>Se mostró un artefacto o resultado sin contarlo.</span></div></details>';
+}
 function renderGlobal(){
   var g=$('#globalView');
   g.innerHTML='<section class="sec global"><h2>Todos los equipos</h2><p class="note">Cada evaluador trabaja en su propia copia: los datos quedan en este navegador. Los archivos juntan todos los equipos (sin el de ejemplo): un resumen y, por equipo, la planilla completa con la evaluación individual de cada integrante.</p>'
     +'<div class="foots"><div class="hf"><label for="fEv">Evaluador/a (figura en los archivos)</label><input id="fEv" type="text" placeholder="Tu nombre"></div>'
     +'<div class="hf"><label for="fBatch">Crear equipos del 1 al…</label><div class="row"><input id="fBatch" type="number" min="1" max="60" value="12" style="width:84px"><button class="btn" data-act="batch">Crear equipos</button></div></div></div>'
-    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn primary" data-act="xlsx">Descargar Excel</button></div>'
-    +'<div class="row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><span id="resetBox"><button class="btn sm" data-act="resetAll">Nueva observación</button></span><span class="note" style="font-size:12px">Borra todos los equipos cargados en este navegador para empezar de cero.</span></div></section>';
+    +'<div class="row"><button class="btn primary" data-act="pdf">Descargar PDF</button><button class="btn" data-act="xlsx">Descargar Excel</button></div>'
+    +'<div class="row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><span id="resetBox"><button class="btn sm" data-act="resetAll">Nueva observación</button></span><span class="note" style="font-size:12px">Borra todos los equipos cargados en este navegador para empezar de cero.</span></div></section>'+legendHTML();
   $('#fEv').value=ev;
 }
 function renderSidenav(){
   var n=$('#sidenav');
-  n.innerHTML='<div class="sidenav-scroll">'+BLOCKS.map(function(b){
+  n.innerHTML='<div class="sidenav-scroll"><button type="button" class="scat" data-act="navcat" data-b="people">Integrantes</button>'+BLOCKS.map(function(b){
     return '<button type="button" class="scat" data-act="navcat" data-b="'+b.k+'">'+esc(b.s)+'</button>'
      +'<div class="sitems">'+b.items.map(function(i){return '<button type="button" class="sitem" data-act="navitem" data-k="'+i.k+'">'+esc(i.n)+'</button>'}).join('')+'</div>';
   }).join('')+'</div>';
@@ -713,16 +723,21 @@ function updateActiveNav(){
   navRAF=null;
   var items=$$('.item[data-k]',$('#view'));
   if(!items.length)return;
-  var offset=$('#top').getBoundingClientRect().height+20,activeEl=items[0];
-  for(var i=0;i<items.length;i++){
-    if(items[i].getBoundingClientRect().top-offset<=2)activeEl=items[i];else break;
+  var offset=$('#top').getBoundingClientRect().height+20,activeEl=items[0],k;
+  var onPeople=!!$('#b-people')&&items[0].getBoundingClientRect().top-offset>2;
+  if(onPeople){k='people'}
+  else{
+    for(var i=0;i<items.length;i++){
+      if(items[i].getBoundingClientRect().top-offset<=2)activeEl=items[i];else break;
+    }
+    k=activeEl.dataset.k;
   }
-  var k=activeEl.dataset.k;
   if(k===lastActiveK)return;
   lastActiveK=k;
-  var blk=BLOCKS.find(function(x){return x.items.some(function(it){return it.k===k})});
+  var blk=onPeople?null:BLOCKS.find(function(x){return x.items.some(function(it){return it.k===k})});
+  var cat=onPeople?'people':(blk&&blk.k);
   $$('.sitem',$('#sidenav')).forEach(function(el){el.classList.toggle('active',el.dataset.k===k)});
-  $$('.scat',$('#sidenav')).forEach(function(el){el.classList.toggle('active',!!blk&&el.dataset.b===blk.k)});
+  $$('.scat',$('#sidenav')).forEach(function(el){el.classList.toggle('active',el.dataset.b===cat)});
   var ab=$('.sitem[data-k="'+k+'"]',$('#sidenav'));if(ab)ab.scrollIntoView({block:'nearest'});
 }
 window.addEventListener('scroll',function(){if(!navRAF)navRAF=requestAnimationFrame(updateActiveNav)},{passive:true});
@@ -743,11 +758,10 @@ function renderView(){
     +'<div class="hact">'+(t.ejemplo?'<span class="badge">Ejemplo</span><button class="btn sm" data-act="real">Es un equipo real</button>':'')
     +'<span id="delBox"><button class="btn sm" data-act="del">Eliminar equipo</button></span></div>'
     +'</div>'
-    +'<div class="people"><div class="ph"><label>Integrantes</label><span class="note">Nombre, nivel individual y comentario corto.</span><button type="button" class="btn sm" data-act="padd">+ Integrante</button></div><div class="plist" id="peopleList"></div></div>'
+    +'<div class="people" id="b-people" aria-labelledby="h-people"><div class="ph"><div class="pt"><h2 id="h-people">Integrantes</h2><p class="note">Nombre, nivel individual y comentario corto.</p></div>'
+    +'<div class="pc"><div class="hf"><label for="fCount">Cantidad</label><input id="fCount" type="number" min="0" max="'+MAXP+'" inputmode="numeric" value="'+t.people.length+'" style="width:84px"></div><button type="button" class="btn" data-act="padd">+ Integrante</button></div></div>'
+    +'<div class="cc" id="countConfirm" hidden></div><div class="plist" id="peopleList"></div></div>'
     +'</section>';
-  h+='<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
-    +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
-    +'<b style="background:var(--line2);color:var(--ink2)">Sin explicar</b><span>Se mostró un artefacto o resultado sin contarlo.</span></div></details>';
   BLOCKS.forEach(function(b){
     h+='<section class="blk" id="b-'+b.k+'" aria-labelledby="h-'+b.k+'"><div class="bh"><h2 id="h-'+b.k+'">'+esc(b.n)+'</h2>'+'<span class="bmeta" data-meta="'+b.k+'"></span></div>'
       +'<div class="items">'+b.items.map(itemHTML).join('')+'</div>'
@@ -785,12 +799,27 @@ function paintPerson(el){
 }
 function renderPeople(){
   var t=cur(),box=$('#peopleList');if(!t||!box)return;
+  var fc=$('#fCount');if(fc)fc.value=t.people.length;
   box.innerHTML=t.people.length?t.people.map(personHTML).join(''):'<p class="note" style="margin:0;font-size:13px;color:var(--ink2)">Sin integrantes cargados.</p>';
   $$('.prow',box).forEach(function(el){
     var p=findPerson(t,el.dataset.pid),c=$('.pcm',el);
     c.value=p.c||'';if(c.value)c.hidden=false;
     paintPerson(el);
   });
+}
+function hideCountConfirm(){pendingCount=null;var cc=$('#countConfirm');if(cc){cc.hidden=true;cc.innerHTML=''}}
+function setCount(t,raw){
+  var n=parseInt(raw,10);
+  if(isNaN(n)){hideCountConfirm();renderPeople();return}
+  n=Math.max(0,Math.min(MAXP,n));
+  var len=t.people.length;
+  if(n===len){hideCountConfirm();renderPeople();return}
+  if(n>len){while(t.people.length<n)t.people.push(newPerson());touch(t);hideCountConfirm();renderPeople();return}
+  var drop=t.people.slice(n),withData=drop.filter(personHasData).length;
+  if(!withData){t.people=t.people.slice(0,n);touch(t);hideCountConfirm();renderPeople();return}
+  pendingCount=n;
+  var cc=$('#countConfirm');cc.hidden=false;
+  cc.innerHTML='<span>Se van a quitar '+drop.length+' integrante'+(drop.length===1?'':'s')+' del final ('+withData+' con datos). ¿Seguir?</span><button type="button" class="btn sm warn" data-act="ccYes">Sí, quitar</button><button type="button" class="btn sm" data-act="ccNo">Cancelar</button>';
 }
 function paintItem(el){
   var t=cur(),k=el.dataset.k,s=t.items[k]||EMPTY;
@@ -833,6 +862,8 @@ document.addEventListener('click',function(e){
     }
     t.people=t.people.filter(function(x){return x.id!==pp.id});touch(t);renderPeople();
   }
+  else if(act==='ccYes'&&t){if(pendingCount!=null){t.people=t.people.slice(0,pendingCount);touch(t)}hideCountConfirm();renderPeople()}
+  else if(act==='ccNo'){hideCountConfirm();renderPeople()}
   else if(act==='navcat'){scrollToEl($('#b-'+b.dataset.b));closeNav()}
   else if(act==='navitem'){scrollToEl($('.item[data-k="'+b.dataset.k+'"]'));closeNav()}
   else if(act==='navtoggle'){var open=!document.body.classList.contains('nav-open');document.body.classList.toggle('nav-open',open);b.setAttribute('aria-expanded',String(open))}
@@ -861,6 +892,7 @@ document.addEventListener('change',function(e){
     if(v!==''){g=parseFloat(v.replace(',','.'));if(!isNaN(g)){g=Math.round(Math.max(0,Math.min(10,g))*10)/10}else{g=null}}
     t.grade=g;el.value=(g==null?'':g);touch(t);
   }
+  else if(el.id==='fCount'){setCount(t,el.value)}
   else if(el.id==='teamSel'){if(el.value)switchTeam(el.value)}
 });
 document.addEventListener('input',function(e){
