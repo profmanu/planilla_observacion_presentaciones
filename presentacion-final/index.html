@@ -698,8 +698,8 @@ function itemHTML(i){
   return '<div class="item" data-k="'+i.k+'">'
    +'<label class="chk"><input type="checkbox" id="p-'+i.k+'" data-act="p" aria-label="Se presentó: '+esc(i.n)+'"><span class="lbl"><b>'+esc(i.n)+'</b><small>'+esc(i.h)+'</small></span></label>'
    +'<div class="seg s5" role="group" aria-label="Nivel: '+esc(i.n)+'">'
-   +LEVELS.map(function(l){return '<button type="button" data-act="lvl" data-v="'+l.v+'" aria-pressed="false" title="'+esc(l.d)+'">'+l.n+'</button>'}).join('')
    +'<button type="button" data-act="x" data-v="5" aria-pressed="false" title="'+esc(NE.d)+'">'+NE.n+'</button>'
+   +LEVELS.map(function(l){return '<button type="button" data-act="lvl" data-v="'+l.v+'" aria-pressed="false" title="'+esc(l.d)+'">'+l.n+'</button>'}).join('')
    +'</div>'
    +'<div class="tools"><button type="button" class="tg" data-act="c" aria-label="Comentar: '+esc(i.n)+'">Comentar</button></div>'
    +'<textarea class="cmt" id="c-'+i.k+'" rows="2" placeholder="Comentario sobre '+esc(i.n)+'…" hidden></textarea>'
