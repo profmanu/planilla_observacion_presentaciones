@@ -15,7 +15,7 @@
   --ink:#131C33;--ink2:#4B5675;--line:#D5DBE8;--line2:#E6EAF3;
   --accent:#2340D9;--accentf:#FFFFFF;--accents:#E4E8FC;
   --l1:#C2372F;--l1f:#FFFFFF;--l2:#E8B23A;--l2f:#2A1D00;
-  --l3:#23794C;--l3f:#FFFFFF;--l4:#0E6E78;--l4f:#FFFFFF;
+  --l3:#23794C;--l3f:#FFFFFF;--l4:#0E6E78;--l4f:#FFFFFF;--l5:#7A1620;--l5f:#FFFFFF;
   --zmin:#E6EAF3;--zok:#D3EDDD;--zover:#F6D5D2;--warn:#B4322A;--ok:#1E6B44;
   --fontd:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;
   --fontb:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -149,6 +149,9 @@ details.legend summary{cursor:pointer;padding:15px 0;font-weight:600;font-size:1
 .seg button[aria-pressed="true"][data-v="2"]{background:var(--l2);color:var(--l2f)}
 .seg button[aria-pressed="true"][data-v="3"]{background:var(--l3);color:var(--l3f)}
 .seg button[aria-pressed="true"][data-v="4"]{background:var(--l4);color:var(--l4f)}
+.seg.s5{grid-template-columns:repeat(5,1fr)}
+.seg button[data-act="x"][aria-pressed="true"]{background:var(--l5);color:var(--l5f)}
+.seg button[data-act="x"]:not([aria-pressed="true"]){color:var(--l5)}
 .tools{display:flex;gap:6px}
 .tg{height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap}
 .tg:hover{background:var(--surface2)}
@@ -252,6 +255,8 @@ var LEVELS=[
   {v:3,n:'Logrado',d:'Correcto, explicado y conectado con las decisiones del equipo.'},
   {v:4,n:'Destacado',d:'Profundo, con insights propios y criterio bien fundado.'}
 ];
+var NE={v:5,n:'Sin explicar',d:'Se mostró un artefacto o resultado sin contarlo.'};
+var ILV=LEVELS.concat([NE]);
 var BLOCKS=[
   {k:'res',n:'Research y definición del problema',s:'Research',items:[
     {k:'per',n:'User persona e insights retomados',h:'¿Retoman la persona y los insights del research inicial, conectándolos con lo que van a proponer?'},
@@ -313,6 +318,7 @@ function mkPeople(){var a=[];for(var i=0;i<4;i++)a.push(newPerson());return a}
 function normalize(r){
   var t=Object.assign({id:uid(),num:1,app:'',t:0,items:{},bc:{},notes:'',ts:0,grade:null,intro:null},r);
   if(t.intro!==true&&t.intro!==false)t.intro=null;
+  Object.keys(t.items||{}).forEach(function(k){var s=t.items[k];if(s&&s.l>0&&s.x)s.x=false});
   if(!Array.isArray(t.people))t.people=mkPeople();
   else t.people=t.people.map(function(p){p=p||{};return {id:p.id||newPerson().id,n:String(p.n==null?'':p.n),l:(p.l>=1&&p.l<=4)?(p.l|0):0,c:String(p.c==null?'':p.c)}});
   return t;
@@ -386,7 +392,7 @@ function seedTeam(){
     lofi:{p:true,l:3,x:false,c:''},
     mfi:{p:true,l:2,x:false,c:''},
     hifi:{p:true,l:4,x:false,c:'Video de navegación muy claro.'},
-    orig:{p:true,l:3,x:true,c:''},
+    orig:{p:true,l:0,x:true,c:''},
     pal:{p:true,l:3,x:false,c:''},
     tipo:{p:true,l:3,x:false,c:''},
     maze:{p:true,l:3,x:false,c:''},
@@ -407,7 +413,7 @@ function seedTeam(){
 
 function teamTitle(t){return 'Equipo '+t.num+' — '+(t.app||'sin nombre')}
 /* ================= PDF ================= */
-var LV_RGB={1:{f:[194,55,47],t:[255,255,255]},2:{f:[232,178,58],t:[42,29,0]},3:{f:[35,121,76],t:[255,255,255]},4:{f:[14,110,120],t:[255,255,255]}};
+var LV_RGB={1:{f:[194,55,47],t:[255,255,255]},2:{f:[232,178,58],t:[42,29,0]},3:{f:[35,121,76],t:[255,255,255]},4:{f:[14,110,120],t:[255,255,255]},5:{f:[122,22,32],t:[255,255,255]}};
 var INK=[19,28,51],INK2=[75,86,117],TINT=[228,232,252],LINEC=[213,219,232];
 function pdfSafe(s){return String(s==null?'':s).replace(/[^ -~ -ÿ–—‘’“”•…€]/g,' ').replace(/\s+/g,' ').trim()}
 function slug(s){return pdfSafe(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
@@ -417,7 +423,8 @@ function timeState(ms,short){
   if(ms>=MAX)return short?'Superó 12 min':'superó el límite de 12 min';
   return short?'En rango':'en rango';
 }
-function levelCounts(t){var c=[0,0,0,0];BLOCKS.forEach(function(b){b.items.forEach(function(i){var s=t.items[i.k];if(s&&s.l>0)c[s.l-1]++})});return c}
+function itemLevel(s){return s&&s.l>0?ILV[s.l-1]:(s&&s.x?NE:null)}
+function levelCounts(t){var c=[0,0,0,0,0];BLOCKS.forEach(function(b){b.items.forEach(function(i){var lv=itemLevel(t.items[i.k]);if(lv)c[lv.v-1]++})});return c}
 function summaryPage(doc,list,evName){
   var M=14;
   doc.setTextColor(INK[0],INK[1],INK[2]);
@@ -427,17 +434,17 @@ function summaryPage(doc,list,evName){
   doc.text('Evaluador/a: '+evName+'   ·   Fecha: '+new Date().toLocaleDateString('es-AR')+'   ·   '+list.length+' equipo'+(list.length===1?'':'s'),M,32);
   var rows=list.map(function(t){
     var e=elapsed(t),c=levelCounts(t);
-    return [String(t.num),pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),String(peopleCount(t)),e>0?fmt(e):'—',timeState(e,true),String(c[0]),String(c[1]),String(c[2]),String(c[3])];
+    return [String(t.num),pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),String(peopleCount(t)),e>0?fmt(e):'—',timeState(e,true),String(c[0]),String(c[1]),String(c[2]),String(c[3]),String(c[4])];
   });
   doc.autoTable({
     startY:38,margin:{left:M,right:M,top:16,bottom:16},
-    head:[['Equipo','App o marca','Nota','Integr.','Duración','Tiempo','Insuf.','En des.','Logr.','Dest.']],
+    head:[['Equipo','App o marca','Nota','Integr.','Duración','Tiempo','Insuf.','En des.','Logr.','Dest.','S/E']],
     body:rows,theme:'grid',
     styles:{font:'helvetica',fontSize:8.5,cellPadding:2,lineColor:LINEC,lineWidth:.2,textColor:INK,valign:'middle'},
     headStyles:{fillColor:INK,textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:8,cellPadding:1.6},
-    columnStyles:{0:{cellWidth:15,halign:'center'},1:{cellWidth:39,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:12,halign:'center'},4:{cellWidth:18,halign:'center'},5:{cellWidth:28,halign:'left'},6:{cellWidth:14,halign:'center'},7:{cellWidth:14,halign:'center'},8:{cellWidth:14,halign:'center'},9:{cellWidth:14,halign:'center'}},
+    columnStyles:{0:{cellWidth:15,halign:'center'},1:{cellWidth:30,halign:'left'},2:{cellWidth:14,halign:'center'},3:{cellWidth:12,halign:'center'},4:{cellWidth:17,halign:'center'},5:{cellWidth:24,halign:'left'},6:{cellWidth:14,halign:'center'},7:{cellWidth:14,halign:'center'},8:{cellWidth:14,halign:'center'},9:{cellWidth:14,halign:'center'},10:{cellWidth:14,halign:'center'}},
     didParseCell:function(d){
-      if(d.section==='head'&&d.column.index>=6){var lv=LV_RGB[d.column.index-5];d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
+      if(d.section==='head'&&d.column.index>=6){var lv=LV_RGB[d.column.index-5];if(!lv)return;d.cell.styles.fillColor=lv.f;d.cell.styles.textColor=lv.t;d.cell.styles.fontSize=7.5;d.cell.styles.cellPadding=1}
       if(d.section==='head'&&d.column.index===1)d.cell.styles.halign='left';
       if(d.section==='head'&&d.column.index===5)d.cell.styles.halign='left';
     }
@@ -445,8 +452,7 @@ function summaryPage(doc,list,evName){
   var y=doc.lastAutoTable.finalY+10;
   doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(INK[0],INK[1],INK[2]);
   doc.text('Escala de evaluación',M,y);
-  var lrows=LEVELS.map(function(l){return [{content:l.n,styles:{fillColor:LV_RGB[l.v].f,textColor:LV_RGB[l.v].t,fontStyle:'bold',halign:'center'}},pdfSafe(l.d)]});
-  lrows.push([{content:'Sin explicar',styles:{fontStyle:'bold',halign:'center',textColor:INK2}},'Se mostró un artefacto o resultado sin contarlo. Figura como [Sin explicar] en las notas.']);
+  var lrows=ILV.map(function(l){return [{content:l.n,styles:{fillColor:LV_RGB[l.v].f,textColor:LV_RGB[l.v].t,fontStyle:'bold',halign:'center'}},pdfSafe(l.d)]});
   doc.autoTable({
     startY:y+3,margin:{left:M,right:M},body:lrows,theme:'grid',
     styles:{font:'helvetica',fontSize:8.5,cellPadding:2,lineColor:LINEC,lineWidth:.2,textColor:INK,valign:'middle'},
@@ -468,11 +474,11 @@ function teamPage(doc,t,evName){
   BLOCKS.forEach(function(b){
     body.push([{content:pdfSafe(b.n).toUpperCase(),colSpan:4,styles:{fillColor:TINT,textColor:INK,fontStyle:'bold',fontSize:8}}]);
     b.items.forEach(function(i){
-      var s=t.items[i.k]||EMPTY,lv=s.l>0?LEVELS[s.l-1]:null,cell;
+      var s=t.items[i.k]||EMPTY,lv=itemLevel(s),cell;
       if(lv)cell={content:lv.n,styles:{fillColor:LV_RGB[lv.v].f,textColor:LV_RGB[lv.v].t,fontStyle:'bold',halign:'center'}};
       else if(s.p)cell={content:'Sin nivel',styles:{textColor:INK2,halign:'center'}};
       else cell={content:'—',styles:{textColor:INK2,halign:'center'}};
-      var note=((s.x?'[Sin explicar] ':'')+pdfSafe(s.c)).trim();
+      var note=pdfSafe(s.c).trim();
       body.push([{content:pdfSafe(i.n),styles:{fontStyle:'bold'}},{content:s.p?'Sí':'No',styles:{halign:'center',textColor:s.p?INK:INK2}},cell,note]);
     });
     var bc=pdfSafe(t.bc[b.k]);
@@ -579,8 +585,8 @@ function teamSheet(t,evName){
   ];
   BLOCKS.forEach(function(b){
     b.items.forEach(function(i){
-      var s=t.items[i.k]||EMPTY,lv=s.l>0?LEVELS[s.l-1].n:(s.p?'Sin nivel':'—');
-      var note=((s.x?'[Sin explicar] ':'')+pdfSafe(s.c)).trim();
+      var s=t.items[i.k]||EMPTY,lv=itemLevel(s)?itemLevel(s).n:(s.p?'Sin nivel':'—');
+      var note=pdfSafe(s.c).trim();
       rows.push([b.n,i.n,s.p?'Sí':'No',lv,note]);
     });
     var bc=pdfSafe(t.bc[b.k]);
@@ -601,15 +607,15 @@ function exportXlsx(){
   var ctx=requireEvaluator();if(!ctx)return;
   var list=ctx.list,evName=ctx.evName;
   if(!(window.XLSX&&window.XLSX.utils)){toast('No se pudo cargar el generador de Excel. Revisá la conexión y recargá la página.');return}
-  var head=['Equipo','App o marca','Nota','Integrantes','Duración','Tiempo','Insuficiente','En desarrollo','Logrado','Destacado'];
+  var head=['Equipo','App o marca','Nota','Integrantes','Duración','Tiempo','Insuficiente','En desarrollo','Logrado','Destacado','Sin explicar'];
   var rows=[head];
   list.forEach(function(t){
     var e=elapsed(t),c=levelCounts(t);
-    rows.push([t.num,pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),peopleCount(t),e>0?fmt(e):'—',timeState(e,true),c[0],c[1],c[2],c[3]]);
+    rows.push([t.num,pdfSafe(t.app)||'Sin nombre',t.grade==null?'—':t.grade.toFixed(1),peopleCount(t),e>0?fmt(e):'—',timeState(e,true),c[0],c[1],c[2],c[3],c[4]]);
   });
   var wb=XLSX.utils.book_new();
   var wsSum=XLSX.utils.aoa_to_sheet(rows);
-  wsSum['!cols']=[{wch:8},{wch:28},{wch:8},{wch:10},{wch:10},{wch:16},{wch:11},{wch:12},{wch:10},{wch:10}];
+  wsSum['!cols']=[{wch:8},{wch:28},{wch:8},{wch:10},{wch:10},{wch:16},{wch:11},{wch:12},{wch:10},{wch:10},{wch:13}];
   XLSX.utils.book_append_sheet(wb,wsSum,'Resumen');
   var used={};
   list.forEach(function(t){
@@ -691,18 +697,18 @@ function renderSelect(){
 function itemHTML(i){
   return '<div class="item" data-k="'+i.k+'">'
    +'<label class="chk"><input type="checkbox" id="p-'+i.k+'" data-act="p" aria-label="Se presentó: '+esc(i.n)+'"><span class="lbl"><b>'+esc(i.n)+'</b><small>'+esc(i.h)+'</small></span></label>'
-   +'<div class="seg" role="group" aria-label="Nivel: '+esc(i.n)+'">'
+   +'<div class="seg s5" role="group" aria-label="Nivel: '+esc(i.n)+'">'
    +LEVELS.map(function(l){return '<button type="button" data-act="lvl" data-v="'+l.v+'" aria-pressed="false" title="'+esc(l.d)+'">'+l.n+'</button>'}).join('')
+   +'<button type="button" data-act="x" data-v="5" aria-pressed="false" title="'+esc(NE.d)+'">'+NE.n+'</button>'
    +'</div>'
-   +'<div class="tools"><button type="button" class="tg" data-act="x" aria-pressed="false" title="Se mostró pero no se explicó">Sin explicar</button>'
-   +'<button type="button" class="tg" data-act="c" aria-label="Comentar: '+esc(i.n)+'">Comentar</button></div>'
+   +'<div class="tools"><button type="button" class="tg" data-act="c" aria-label="Comentar: '+esc(i.n)+'">Comentar</button></div>'
    +'<textarea class="cmt" id="c-'+i.k+'" rows="2" placeholder="Comentario sobre '+esc(i.n)+'…" hidden></textarea>'
    +'</div>';
 }
 function legendHTML(){
-  return '<details class="legend"><summary>Escala de 4 niveles</summary><div class="lg">'
-    +LEVELS.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
-    +'<b style="background:var(--line2);color:var(--ink2)">Sin explicar</b><span>Se mostró un artefacto o resultado sin contarlo.</span></div></details>';
+  return '<details class="legend"><summary>Escala de niveles</summary><div class="lg">'
+    +ILV.map(function(l){return '<b style="background:var(--l'+l.v+');color:var(--l'+l.v+'f)">'+l.n+'</b><span>'+esc(l.d)+'</span>'}).join('')
+    +'</div></details>';
 }
 function renderGlobal(){
   var g=$('#globalView');
@@ -844,14 +850,14 @@ function paintItem(el){
   el.classList.toggle('on',!!s.p);
   $('input[data-act="p"]',el).checked=!!s.p;
   $$('[data-act="lvl"]',el).forEach(function(b){b.setAttribute('aria-pressed',String(+b.dataset.v===s.l))});
-  $('[data-act="x"]',el).setAttribute('aria-pressed',String(!!s.x));
+  $('[data-act="x"]',el).setAttribute('aria-pressed',String(!!s.x&&!(s.l>0)));
   $('[data-act="c"]',el).classList.toggle('has',!!(s.c&&s.c.trim()));
 }
 function paintBlock(b){
-  var t=cur(),c=[0,0,0,0],r=0;
-  b.items.forEach(function(i){var s=t.items[i.k];if(s&&s.l>0){c[s.l-1]++;r++}});
+  var t=cur(),c=[0,0,0,0,0],r=0;
+  b.items.forEach(function(i){var lv=itemLevel(t.items[i.k]);if(lv){c[lv.v-1]++;r++}});
   var m=$('[data-meta="'+b.k+'"]');
-  var desc=c.map(function(n,i){return n?LEVELS[i].n+' '+n:''}).filter(Boolean).join(', ')||'Sin niveles asignados';
+  var desc=c.map(function(n,i){return n?ILV[i].n+' '+n:''}).filter(Boolean).join(', ')||'Sin niveles asignados';
   if(m)m.innerHTML=r?('<span class="dist" role="img" aria-label="'+desc+'">'+c.map(function(n,i){return n?'<i style="flex:'+n+';background:var(--l'+(i+1)+')"></i>':''}).join('')+'</span>'):'';
 }
 function renderAll(){renderGlobal();renderSelect();renderView();paintTimer()}
@@ -865,8 +871,8 @@ function switchTeam(id){
 document.addEventListener('click',function(e){
   var b=e.target.closest('[data-act]');if(!b)return;
   var act=b.dataset.act,t=cur(),it=b.closest('.item');
-  if(act==='lvl'&&t){var s=st(t,it.dataset.k),v=+b.dataset.v;s.l=s.l===v?0:v;if(s.l>0)s.p=true;paintItem(it);paintBlock(BLOCKS.find(function(x){return x.items.some(function(i){return i.k===it.dataset.k})}));renderSelect();touch(t)}
-  else if(act==='x'&&t){var s2=st(t,it.dataset.k);s2.x=!s2.x;if(s2.x)s2.p=true;paintItem(it);touch(t)}
+  if(act==='lvl'&&t){var s=st(t,it.dataset.k),v=+b.dataset.v;s.l=s.l===v?0:v;if(s.l>0){s.p=true;s.x=false}paintItem(it);paintBlock(BLOCKS.find(function(x){return x.items.some(function(i){return i.k===it.dataset.k})}));renderSelect();touch(t)}
+  else if(act==='x'&&t){var s2=st(t,it.dataset.k);s2.x=!s2.x;if(s2.x){s2.p=true;s2.l=0}paintItem(it);paintBlock(BLOCKS.find(function(x){return x.items.some(function(i){return i.k===it.dataset.k})}));renderSelect();touch(t)}
   else if(act==='c'){var c=$('.cmt',it);c.hidden=!c.hidden;if(!c.hidden)c.focus()}
   else if(act==='plvl'&&t){var row=b.closest('.prow'),p=findPerson(t,row.dataset.pid),v2=+b.dataset.v;if(p){p.l=p.l===v2?0:v2;paintPerson(row);touch(t)}}
   else if(act==='pc'){var pc=b.closest('.prow').querySelector('.pcm');pc.hidden=!pc.hidden;if(!pc.hidden)pc.focus()}
