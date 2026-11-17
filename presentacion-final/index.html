@@ -93,6 +93,14 @@ main{padding-block:28px 64px;display:flex;flex-direction:column;gap:34px}
 .pc{display:flex;align-items:flex-end;gap:10px}
 .pc .hf label{margin-bottom:6px}
 .cc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--warn)}
+.ask{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:12px 14px;background:var(--surface2);border:1px solid var(--line);border-radius:10px}
+.ask .q{font-weight:600;font-size:14px;flex:1;min-width:220px}
+.yn{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--line)}
+.yn button{height:34px;min-width:72px;padding:0 14px;border:0;border-left:1px solid var(--line);background:var(--surface);color:var(--ink2);font-size:12px;font-weight:600}
+.yn button:first-child{border-left:0}
+.yn button:hover{background:var(--accents);color:var(--ink)}
+.yn button[aria-pressed="true"][data-v="1"]{background:var(--l3);color:var(--l3f)}
+.yn button[aria-pressed="true"][data-v="0"]{background:var(--l1);color:var(--l1f)}
 .plist{display:flex;flex-direction:column;gap:8px}
 .prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 12px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .prow .pcm{grid-column:1/-1}
@@ -268,7 +276,7 @@ var BLOCKS=[
     {k:'tf',n:'Task flow',h:'¿El nuevo task flow resuelve la fricción detectada antes del rediseño?'},
     {k:'uf',n:'User flow',h:'¿El nuevo user flow simplifica el recorrido de la persona usuaria?'}
   ]},
-  {k:'val',n:'Validación: testeos no moderados',s:'Validación',items:[
+  {k:'val',n:'Pruebas de usabilidad: testeos no moderados',s:'Pruebas de usabilidad',items:[
     {k:'tar',n:'Tareas solicitadas',h:'¿Qué tareas le pidieron a las personas testeadas y por qué esas?'},
     {k:'maze',n:'Métricas de Maze',h:'¿Qué dicen el éxito, el tiempo y los misclicks sobre la propuesta?'},
     {k:'heat',n:'Mapas de calor',h:'¿Qué muestran los mapas de calor y qué decisión tomaron a partir de eso?'},
@@ -278,7 +286,7 @@ var BLOCKS=[
     {k:'conc',n:'Conclusiones',h:'¿Las conclusiones responden al objetivo del proyecto, no solo resumen lo que hicieron?'},
     {k:'rec',n:'Recomendaciones y próximos pasos',h:'¿Qué harían después si siguieran trabajando en este producto?'}
   ]},
-  {k:'pre',n:'Presentación del equipo',s:'Presentación',items:[
+  {k:'pre',n:'Presentación del equipo',s:'Presentación del equipo',items:[
     {k:'pdoc',n:'Documento de presentación',h:'Diseño, estructura y calidad visual del material (slides o documento)'},
     {k:'cla',n:'Claridad y concisión',h:'Contenido claro, conciso y útil'},
     {k:'sto',n:'Storytelling',h:'Hilo narrativo del proceso o del producto'}
@@ -303,13 +311,15 @@ function sorted(){return teams.slice().sort(function(a,b){return (a.num-b.num)||
 function newPerson(){return {id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),n:'',l:0,c:''}}
 function mkPeople(){var a=[];for(var i=0;i<4;i++)a.push(newPerson());return a}
 function normalize(r){
-  var t=Object.assign({id:uid(),num:1,app:'',t:0,items:{},bc:{},notes:'',ts:0,grade:null},r);
+  var t=Object.assign({id:uid(),num:1,app:'',t:0,items:{},bc:{},notes:'',ts:0,grade:null,intro:null},r);
+  if(t.intro!==true&&t.intro!==false)t.intro=null;
   if(!Array.isArray(t.people))t.people=mkPeople();
   else t.people=t.people.map(function(p){p=p||{};return {id:p.id||newPerson().id,n:String(p.n==null?'':p.n),l:(p.l>=1&&p.l<=4)?(p.l|0):0,c:String(p.c==null?'':p.c)}});
   return t;
 }
 function findPerson(t,id){return t.people.find(function(p){return p.id===id})}
 function peopleCount(t){return t.people.length}
+function introLabel(t){return t.intro===true?'Sí':(t.intro===false?'No':'Sin responder')}
 var MAXP=20,pendingCount=null;
 function personHasData(p){return !!((p.n||'').trim()||p.l>0||(p.c||'').trim())}
 function personRows(t){
@@ -486,19 +496,20 @@ function teamPage(doc,t,evName){
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(INK2[0],INK2[1],INK2[2]);doc.text(nl,M,y);y+=nl.length*4.4+6;
   }
   var pr=personRows(t);
-  if(pr.length){
+  if(pr.length||t.intro!=null){
     need(34);
     doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(INK[0],INK[1],INK[2]);
     doc.text('Evaluación individual',M,y);
     doc.setDrawColor(INK[0],INK[1],INK[2]);doc.setLineWidth(.5);doc.line(M,y+2,M+CW,y+2);
     y+=6;
+    if(t.intro!=null){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text('¿Se presentan al comenzar la exposición?  '+introLabel(t),M,y);y+=5}
     var pb=pr.map(function(p){
       var lv=p.l>0?LEVELS[p.l-1]:null;
       return [{content:p.name,styles:{fontStyle:'bold'}},
         lv?{content:lv.n,styles:{fillColor:LV_RGB[lv.v].f,textColor:LV_RGB[lv.v].t,fontStyle:'bold',halign:'center'}}:{content:'—',styles:{textColor:INK2,halign:'center'}},
         p.c];
     });
-    doc.autoTable({
+    if(pr.length)doc.autoTable({
       startY:y,margin:{left:M,right:M,top:16,bottom:BOT},
       head:[['Integrante','Nivel','Comentario']],body:pb,theme:'grid',
       styles:{font:'helvetica',fontSize:8.5,cellPadding:{top:1.6,bottom:1.6,left:2,right:2},lineColor:LINEC,lineWidth:.2,textColor:INK,valign:'middle',overflow:'linebreak'},
@@ -558,6 +569,7 @@ function teamSheet(t,evName){
   var rows=[
     ['Equipo '+t.num,pdfSafe(t.app)||'Sin nombre'],
     ['Integrantes',peopleCount(t)],
+    ['Se presentan al comenzar',introLabel(t)],
     ['Duración',e>0?fmt(e):'Sin registrar'],
     ['Estado del tiempo',timeState(e,false)],
     ['Nota',t.grade==null?'Sin calificar':t.grade.toFixed(1)],
@@ -582,7 +594,7 @@ function teamSheet(t,evName){
     pr.forEach(function(p){rows.push(['',p.name,'',p.l>0?LEVELS[p.l-1].n:'—',p.c])});
   }
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:20},{wch:32},{wch:10},{wch:14},{wch:72}];
+  ws['!cols']=[{wch:40},{wch:34},{wch:10},{wch:14},{wch:72}];
   return ws;
 }
 function exportXlsx(){
@@ -721,21 +733,22 @@ function scrollToEl(el){
 var navRAF=null,lastActiveK=null;
 function updateActiveNav(){
   navRAF=null;
-  var items=$$('.item[data-k]',$('#view'));
-  if(!items.length)return;
-  var offset=$('#top').getBoundingClientRect().height+20,activeEl=items[0],k;
-  var onPeople=!!$('#b-people')&&items[0].getBoundingClientRect().top-offset>2;
-  if(onPeople){k='people'}
-  else{
-    for(var i=0;i<items.length;i++){
-      if(items[i].getBoundingClientRect().top-offset<=2)activeEl=items[i];else break;
-    }
-    k=activeEl.dataset.k;
-  }
+  var secs=$$('.blk',$('#view'));
+  if(!secs.length)return;
+  var offset=$('#top').getBoundingClientRect().height+20;
+  var de=document.documentElement;
+  var atBottom=de.scrollHeight>window.innerHeight+4&&window.innerHeight+window.scrollY>=de.scrollHeight-2;
+  var onPeople=!atBottom&&!!$('#b-people')&&secs[0].getBoundingClientRect().top-offset>2;
+  var bi=0;
+  for(var i=0;i<secs.length;i++){if(secs[i].getBoundingClientRect().top-offset<=2)bi=i;else break}
+  if(atBottom)bi=secs.length-1;
+  var items=$$('.item[data-k]',secs[bi]),k=items[0].dataset.k;
+  for(var j=0;j<items.length;j++){if(items[j].getBoundingClientRect().top-offset<=2)k=items[j].dataset.k}
+  if(atBottom)k=items[items.length-1].dataset.k;
+  var cat=onPeople?'people':secs[bi].id.replace(/^b-/,'');
+  if(onPeople)k='people';
   if(k===lastActiveK)return;
   lastActiveK=k;
-  var blk=onPeople?null:BLOCKS.find(function(x){return x.items.some(function(it){return it.k===k})});
-  var cat=onPeople?'people':(blk&&blk.k);
   $$('.sitem',$('#sidenav')).forEach(function(el){el.classList.toggle('active',el.dataset.k===k)});
   $$('.scat',$('#sidenav')).forEach(function(el){el.classList.toggle('active',el.dataset.b===cat)});
   var ab=$('.sitem[data-k="'+k+'"]',$('#sidenav'));if(ab)ab.scrollIntoView({block:'nearest'});
@@ -760,6 +773,7 @@ function renderView(){
     +'</div>'
     +'<div class="people" id="b-people" aria-labelledby="h-people"><div class="ph"><div class="pt"><h2 id="h-people">Integrantes</h2><p class="note">Nombre, nivel individual y comentario corto.</p></div>'
     +'<div class="pc"><div class="hf"><label for="fCount">Cantidad</label><input id="fCount" type="number" min="0" max="'+MAXP+'" inputmode="numeric" value="'+t.people.length+'" style="width:84px"></div><button type="button" class="btn" data-act="padd">+ Integrante</button></div></div>'
+    +'<div class="ask"><span class="q" id="introQ">¿Se presentan al comenzar la exposición?</span><div class="yn" role="group" aria-labelledby="introQ"><button type="button" data-act="intro" data-v="1" aria-pressed="false">Sí</button><button type="button" data-act="intro" data-v="0" aria-pressed="false">No</button></div></div>'
     +'<div class="cc" id="countConfirm" hidden></div><div class="plist" id="peopleList"></div></div>'
     +'</section>';
   BLOCKS.forEach(function(b){
@@ -770,7 +784,7 @@ function renderView(){
   h+='<section class="sec"><h2>Observaciones generales</h2><p class="note">Una observación por línea: cada línea se vuelve un bullet en la devolución.</p>'
     +'<textarea id="notes" rows="3" placeholder="Ej.: Buen arranque contando el contexto de la app."></textarea></section>';
   v.innerHTML=h;
-  renderPeople();
+  renderPeople();paintIntro();
   // valores de textareas (sin interpolar HTML)
   BLOCKS.forEach(function(b){$('#bc-'+b.k).value=t.bc[b.k]||''});
   $('#notes').value=t.notes||'';
@@ -806,6 +820,10 @@ function renderPeople(){
     c.value=p.c||'';if(c.value)c.hidden=false;
     paintPerson(el);
   });
+}
+function paintIntro(){
+  var t=cur();if(!t)return;
+  $$('[data-act="intro"]').forEach(function(b){b.setAttribute('aria-pressed',String(t.intro!=null&&(b.dataset.v==='1')===t.intro))});
 }
 function hideCountConfirm(){pendingCount=null;var cc=$('#countConfirm');if(cc){cc.hidden=true;cc.innerHTML=''}}
 function setCount(t,raw){
@@ -862,6 +880,7 @@ document.addEventListener('click',function(e){
     }
     t.people=t.people.filter(function(x){return x.id!==pp.id});touch(t);renderPeople();
   }
+  else if(act==='intro'&&t){var iv=b.dataset.v==='1';t.intro=(t.intro===iv)?null:iv;paintIntro();touch(t)}
   else if(act==='ccYes'&&t){if(pendingCount!=null){t.people=t.people.slice(0,pendingCount);touch(t)}hideCountConfirm();renderPeople()}
   else if(act==='ccNo'){hideCountConfirm();renderPeople()}
   else if(act==='navcat'){scrollToEl($('#b-'+b.dataset.b));closeNav()}
